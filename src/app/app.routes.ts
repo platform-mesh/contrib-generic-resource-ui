@@ -23,6 +23,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'dashboard-preview',
+    loadComponent: () =>
+      import('./pages/dashboard-preview/dashboard-preview.component').then(
+        (m) => m.DashboardPreviewComponent
+      ),
+  },
+  {
     path: ':name',
     loadComponent: () =>
       import('./components/resource-detail-view/resource-detail-view.component').then(

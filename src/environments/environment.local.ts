@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
+  mockGraphql: true,
   luigiContextOverwrite: {
     token: 'your-local-token',
     portalContext: {

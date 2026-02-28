@@ -119,7 +119,10 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "buildTarget": "generic-resource-ui:build"
+            "buildTarget": "generic-resource-ui:build",
+            "ssl": true,
+            "sslCert": "certs/localhost+2.pem",
+            "sslKey": "certs/localhost+2-key.pem"
           },
           "configurations": {
             "production": {

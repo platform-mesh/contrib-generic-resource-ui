@@ -5,3 +5,4 @@ export * from './detail-section';
 export * from './ready-status';
 export * from './resource';
 export * from './node-context';
+export * from './dashboard-card';
