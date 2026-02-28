@@ -301,6 +301,37 @@ tasks:
           echo ""
         done
 
+  screenshots:dashboard:
+    desc: "Take dashboard screenshots (serve-local with mocked data)"
+    vars:
+      SERVER_PID:
+        sh: lsof -ti :4200 2>/dev/null || echo ""
+    cmds:
+      - |
+        rm -rf test-results/screenshots/dashboard/*
+        mkdir -p test-results/screenshots/dashboard
+      - |
+        if [ -n "{{.SERVER_PID}}" ]; then
+          echo "Dev server already running (PID: {{.SERVER_PID}})"
+        else
+          echo "Starting dev server (serve-local)..."
+          npx ng serve --configuration=serve-local --serve-path=/ui/generic-resource &
+          for i in $(seq 1 30); do
+            if curl -k -s -o /dev/null -w "" https://localhost:4200/ui/generic-resource/ 2>/dev/null; then
+              echo "Server ready"
+              break
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+        fi
+      - |
+        npx playwright test e2e/dashboard-screenshots.spec.ts --reporter=list
+      - |
+        echo ""
+        echo "Dashboard screenshots saved to: test-results/screenshots/dashboard/"
+        ls -la test-results/screenshots/dashboard/ 2>/dev/null || echo "No screenshots found"
+
   screenshots:offline:
     desc: "Take screenshots with mocked GraphQL (no gateway needed)"
     vars:

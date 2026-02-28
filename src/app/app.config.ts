@@ -64,7 +64,7 @@ export const appConfig: ApplicationConfig = {
       defaultGlobalContentDensity: ContentDensityMode.COMPACT,
     }),
     provideMessageToastConfig({}),
-    provideTheming({ themeQueryParam: 'sap-theme' }),
+    provideTheming({ themeQueryParam: 'sap-theme', defaultTheme: 'sap_horizon' }),
     provideDialogService(),
 
     provideStore<AppState>({

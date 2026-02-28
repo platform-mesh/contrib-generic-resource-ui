@@ -23,10 +23,10 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'dashboard-preview',
+    path: 'dashboard',
     loadComponent: () =>
-      import('./pages/dashboard-preview/dashboard-preview.component').then(
-        (m) => m.DashboardPreviewComponent
+      import('./pages/dashboard/dashboard.component').then(
+        (m) => m.DashboardComponent
       ),
   },
   {

@@ -62,6 +62,23 @@ export interface BarChartConfig {
   groupBy?: string;
 }
 
+// Full DashboardCard CR (metadata + spec), as stored in the cluster
+export interface DashboardCard {
+  metadata: {
+    name: string;
+    uid?: string;
+    labels?: Record<string, string>;
+  };
+  spec: DashboardCardSpec;
+}
+
+// User preferences for card visibility and ordering, stored in localStorage
+export interface DashboardPreferences {
+  hiddenCards: string[];   // card-id label values
+  cardOrder: string[];     // card-id label values
+  pinnedCards: string[];   // card-id label values
+}
+
 // Runtime state for card data
 export interface CardData {
   resources: Resource[];
