@@ -36,7 +36,7 @@ import { Store } from '@ngrx/store';
 import { combineLatest, distinctUntilChanged, filter, map, switchMap, take } from 'rxjs';
 import { ContextService } from 'services/context/context.service';
 import { ReadyStatusDetectorService } from 'services/view-generator/ready-status-detector.service';
-import { selectIsContextInitialized, selectResourceDefinition, selectResourceId } from 'state/context/context.selectors';
+import { selectIsContextInitialized, selectNamespaceId, selectResourceDefinition, selectResourceId } from 'state/context/context.selectors';
 import { loadResourceDetail } from 'state/resources/resources.actions';
 import {
   selectDetailLoading,
@@ -440,9 +440,19 @@ export class ResourceDetailViewComponent implements OnInit {
       this.store.select(selectResourceDefinition),
       this.route.paramMap.pipe(map((params) => params.get('name'))),
       this.store.select(selectResourceId),
+      this.store.select(selectNamespaceId),
     ])
       .pipe(
-        filter(([initialized, fieldAnalysis]) => initialized && !!fieldAnalysis),
+        filter(([initialized, fieldAnalysis, resourceDef, , , namespaceId]) => {
+          if (!initialized || !fieldAnalysis) {
+            return false;
+          }
+          // For namespaced resources, wait until the namespace is available in the context
+          if (resourceDef?.scope === 'Namespaced' && !namespaceId) {
+            return false;
+          }
+          return true;
+        }),
         map(([, , resourceDef, routeName, contextResourceId]) => ({
           // Include resource definition key to detect context/schema changes
           contextKey: resourceDef ? `${resourceDef.group}/${resourceDef.kind}` : '',
