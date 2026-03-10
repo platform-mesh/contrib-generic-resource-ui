@@ -1,0 +1,9 @@
+certs/
+.secret/
+.claude
+node_modules/
+test-results/
+coverage/
+e2e/
+.angular/
+.git/

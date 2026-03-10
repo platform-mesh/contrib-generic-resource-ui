@@ -1,7 +1,8 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
+import { LuigiContextServiceImpl } from '@luigi-project/client-support-angular';
 import { DashboardComponent } from './dashboard.component';
 import { DashboardService } from 'services/dashboard/dashboard.service';
 import { DashboardPreferencesService } from 'services/dashboard/dashboard-preferences.service';
@@ -9,14 +10,12 @@ import { ConfigService } from 'services/config/config.service';
 import { DashboardCard, ResourceNodeContext } from 'models/index';
 import { MOCK_DASHBOARD_CARDS } from 'services/dashboard/mock-dashboard-cards';
 
+let luigiContext$: Subject<any>;
+
 // Mock the Luigi ESM modules to avoid SyntaxError in Jest
 jest.mock('@luigi-project/client-support-angular', () => ({
   ILuigiContextTypes: { INIT: 'init', UPDATE: 'update' },
-  LuigiContextServiceImpl: class {
-    contextObservable = jest.fn().mockReturnValue({ subscribe: jest.fn() });
-    getContextAsync = jest.fn();
-    getContext = jest.fn();
-  },
+  LuigiContextServiceImpl: class {},
 }));
 jest.mock('@luigi-project/testing-utilities', () => ({}));
 
@@ -51,9 +50,16 @@ describe('DashboardComponent', () => {
     portalContext: { crdGatewayApiUrl: 'http://localhost/my-workspace/graphql' },
   };
 
+  const luigiNodeContext = {
+    token: 'test-token',
+    portalContext: { crdGatewayApiUrl: 'http://localhost/my-workspace/graphql' },
+  };
+
   const emptyPrefs = { hiddenCards: [], cardOrder: [], pinnedCards: [] };
 
   beforeEach(async () => {
+    luigiContext$ = new Subject<any>();
+
     mockDashboardService = {
       fetchCards: jest.fn().mockReturnValue(of(MOCK_DASHBOARD_CARDS)),
     };
@@ -80,6 +86,12 @@ describe('DashboardComponent', () => {
         { provide: DashboardService, useValue: mockDashboardService },
         { provide: DashboardPreferencesService, useValue: mockPreferencesService },
         { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: LuigiContextServiceImpl,
+          useValue: {
+            contextObservable: jest.fn().mockReturnValue(luigiContext$.asObservable()),
+          },
+        },
         { provide: 'ENV', useValue: { mockGraphql: true } },
       ],
     })
@@ -93,22 +105,44 @@ describe('DashboardComponent', () => {
 
     fixture = TestBed.createComponent(DashboardComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
+  /** Emit Luigi INIT context to initialize the dashboard (portal mode) */
+  function initViaLuigi() {
+    fixture.detectChanges();
+    luigiContext$.next({ contextType: 'init', context: luigiNodeContext });
+    fixture.detectChanges();
+  }
+
+  /** Wait for the 500ms fallback timer (standalone mode) */
+  function initViaConfigFallback() {
+    return fakeAsync(() => {
+      fixture.detectChanges();
+      tick(600);
+      fixture.detectChanges();
+    })();
+  }
+
   it('should create', () => {
+    initViaLuigi();
     expect(component).toBeTruthy();
   });
 
-  it('should load config and fetch cards', () => {
-    expect(mockConfigService.loadConfig).toHaveBeenCalled();
-    expect(mockConfigService.toResourceNodeContext).toHaveBeenCalled();
-    expect(mockDashboardService.fetchCards).toHaveBeenCalledWith(testContext);
+  it('should use Luigi context when available', () => {
+    initViaLuigi();
+    expect(mockConfigService.loadConfig).not.toHaveBeenCalled();
+    expect(mockDashboardService.fetchCards).toHaveBeenCalled();
     expect((component as any).allCards()).toEqual(MOCK_DASHBOARD_CARDS);
     expect((component as any).loading()).toBe(false);
   });
 
+  it('should not call config when Luigi context arrives first', () => {
+    initViaLuigi();
+    expect(mockConfigService.loadConfig).not.toHaveBeenCalled();
+  });
+
   it('should group cards by category', () => {
+    initViaLuigi();
     const groups = (component as any).cardsByCategory();
     const categoryNames = groups.map((g: any) => g.name);
     expect(categoryNames).toContain('infrastructure');
@@ -118,6 +152,7 @@ describe('DashboardComponent', () => {
   });
 
   it('should sort pinned cards first', () => {
+    initViaLuigi();
     (component as any).preferences.set({
       ...emptyPrefs,
       pinnedCards: ['permissions-overview'],
@@ -130,6 +165,7 @@ describe('DashboardComponent', () => {
   });
 
   it('should hide cards based on preferences', () => {
+    initViaLuigi();
     (component as any).preferences.set({
       ...emptyPrefs,
       hiddenCards: ['clusters-count'],
@@ -144,6 +180,7 @@ describe('DashboardComponent', () => {
   });
 
   it('should show hidden cards when showHidden is toggled', () => {
+    initViaLuigi();
     (component as any).preferences.set({
       ...emptyPrefs,
       hiddenCards: ['clusters-count'],
@@ -159,6 +196,7 @@ describe('DashboardComponent', () => {
   });
 
   it('should compute hidden count', () => {
+    initViaLuigi();
     (component as any).preferences.set({
       ...emptyPrefs,
       hiddenCards: ['clusters-count', 'service-instances-count'],
@@ -169,18 +207,21 @@ describe('DashboardComponent', () => {
   });
 
   it('should call preferencesService.hideCard on onHide', () => {
+    initViaLuigi();
     const card = MOCK_DASHBOARD_CARDS[0];
     (component as any).onHide(card);
     expect(mockPreferencesService.hideCard).toHaveBeenCalledWith('my-workspace', 'clusters-count');
   });
 
   it('should call preferencesService.pinCard on onPin', () => {
+    initViaLuigi();
     const card = MOCK_DASHBOARD_CARDS[0];
     (component as any).onPin(card);
     expect(mockPreferencesService.pinCard).toHaveBeenCalledWith('my-workspace', 'clusters-count');
   });
 
   it('should sort by priority when no user ordering', () => {
+    initViaLuigi();
     const visible = (component as any).visibleCards();
     const priorities = visible.map((c: DashboardCard) => c.spec.priority ?? 100);
     for (let i = 1; i < priorities.length; i++) {

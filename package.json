@@ -5,7 +5,7 @@
     "preinstall": "npx only-allow npm",
     "start": "ng serve --serve-path=/ui/generic-resource --ssl --ssl-cert=certs/localhost+2.pem --ssl-key=certs/localhost+2-key.pem",
     "build": "ng build",
-    "test": "npm run test:unit || true",
+    "test": "npm run test:unit",
     "test:unit": "jest --detectOpenHandles",
     "test:cov": "jest --runInBand --coverage --silent",
     "test:e2e": "npx playwright test",
@@ -15,7 +15,7 @@
     "lint:fix": "ng lint --fix",
     "format": "prettier --write --list-different .",
     "check-format": "prettier --check .",
-    "postinstall": "husky install .husky"
+    "postinstall": "husky || true"
   },
   "lint-staged": {
     "*.{ts,css,md,html,json,scss}": "prettier -w",

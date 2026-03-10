@@ -14,10 +14,16 @@ import { ButtonComponent } from '@fundamental-ngx/core/button';
 import { IconComponent } from '@fundamental-ngx/core/icon';
 import { PopoverModule } from '@fundamental-ngx/core/popover';
 import { ListModule } from '@fundamental-ngx/core/list';
+import {
+  ILuigiContextTypes,
+  LuigiContextServiceImpl,
+} from '@luigi-project/client-support-angular';
+import { timer, take, filter } from 'rxjs';
 import { CardHostComponent } from 'components/dashboard-cards/card-host/card-host.component';
 import {
   DashboardCard,
   DashboardPreferences,
+  NodeContext,
   ResourceNodeContext,
 } from 'models/index';
 import { ConfigService } from 'services/config/config.service';
@@ -298,9 +304,11 @@ interface CategoryGroup {
 })
 export class DashboardComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly luigiContextService = inject(LuigiContextServiceImpl);
   private readonly configService = inject(ConfigService);
   private readonly dashboardService = inject(DashboardService);
   private readonly preferencesService = inject(DashboardPreferencesService);
+  private luigiInitialized = false;
 
   protected readonly allCards = signal<DashboardCard[]>([]);
   protected readonly preferences = signal<DashboardPreferences>({
@@ -359,29 +367,70 @@ export class DashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.configService
-      .loadConfig()
+    // Try Luigi context first (portal mode)
+    this.luigiContextService
+      .contextObservable()
+      .pipe(
+        filter(
+          (msg) =>
+            msg.contextType === ILuigiContextTypes.INIT ||
+            msg.contextType === ILuigiContextTypes.UPDATE
+        ),
+        take(1),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((msg) => {
+        this.luigiInitialized = true;
+        const nodeCtx = msg.context as NodeContext;
+        const ctx: ResourceNodeContext = {
+          token: nodeCtx.token,
+          portalContext: nodeCtx.portalContext,
+          resourceDefinition: nodeCtx.resourceDefinition ?? {
+            group: '',
+            version: '',
+            kind: '',
+            plural: '',
+            singular: '',
+            scope: 'Cluster',
+          },
+          accountId: nodeCtx.accountId,
+        };
+        this.initDashboard(ctx);
+      });
+
+    // Fallback to config.json after timeout (standalone mode)
+    timer(500)
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.luigiInitialized) {
+          this.configService
+            .loadConfig()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((config) => {
+              this.initDashboard(this.configService.toResourceNodeContext(config));
+            });
+        }
+      });
+  }
+
+  private initDashboard(ctx: ResourceNodeContext): void {
+    this.context.set(ctx);
+
+    const workspace = this.workspaceName();
+    this.preferences.set(this.preferencesService.getPreferences(workspace));
+
+    this.dashboardService
+      .fetchCards(ctx)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((config) => {
-        const ctx = this.configService.toResourceNodeContext(config);
-        this.context.set(ctx);
-
-        const workspace = this.workspaceName();
-        this.preferences.set(this.preferencesService.getPreferences(workspace));
-
-        this.dashboardService
-          .fetchCards(ctx)
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe({
-            next: (cards) => {
-              this.allCards.set(cards);
-              this.loading.set(false);
-            },
-            error: (err) => {
-              this.error.set(String(err));
-              this.loading.set(false);
-            },
-          });
+      .subscribe({
+        next: (cards) => {
+          this.allCards.set(cards);
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.error.set(String(err));
+          this.loading.set(false);
+        },
       });
   }
 

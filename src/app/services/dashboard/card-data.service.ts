@@ -59,18 +59,17 @@ export class CardDataService {
 
   private extractItems(data: Record<string, any>): any[] {
     if (!data) return [];
-    // Walk the response tree to find the first items array
-    for (const value of Object.values(data)) {
-      if (value && typeof value === 'object') {
-        if (Array.isArray(value.items)) {
-          return value.items;
-        }
-        // One level deeper
-        for (const nested of Object.values(value)) {
-          if (nested && typeof nested === 'object' && Array.isArray((nested as any).items)) {
-            return (nested as any).items;
-          }
-        }
+    return this.findItems(data, 5);
+  }
+
+  /** Recursively walk the response tree to find the first `items` array. */
+  private findItems(obj: Record<string, any>, depth: number): any[] {
+    if (depth <= 0 || !obj || typeof obj !== 'object') return [];
+    if (Array.isArray(obj['items'])) return obj['items'];
+    for (const value of Object.values(obj)) {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const found = this.findItems(value as Record<string, any>, depth - 1);
+        if (found.length > 0) return found;
       }
     }
     return [];
