@@ -377,22 +377,6 @@ export class CreateResourcePageComponent implements OnInit {
   }
 
   protected onSubmit(): void {
-    let resource: Resource;
-
-    if (this.editorMode() === 'yaml') {
-      if (!this.validateYaml()) {
-        return;
-      }
-      try {
-        resource = yamlToResource(this.yamlContent);
-      } catch {
-        this.yamlValidationErrors.set(['Invalid YAML syntax']);
-        return;
-      }
-    } else {
-      resource = this.buildResourceFromForm();
-    }
-
     const resourceDef = this.resourceDefinition();
     const context = this.resourceContext();
 
@@ -403,16 +387,36 @@ export class CreateResourcePageComponent implements OnInit {
 
     this.saving.set(true);
 
-    this.resourceService.create(resource, resourceDef, context).pipe(take(1)).subscribe({
-      next: () => {
+    if (this.editorMode() === 'yaml') {
+      if (!this.validateYaml()) {
         this.saving.set(false);
-        this.luigiClient.linkManager().goBack({ created: resource.metadata.name });
-      },
-      error: (err: Error) => {
-        this.saving.set(false);
-        this.yamlValidationErrors.set([`Failed to create resource: ${err.message || 'Unknown error'}`]);
-      },
-    });
+        return;
+      }
+      this.resourceService.applyYaml(this.yamlContent, context).pipe(take(1)).subscribe({
+        next: () => {
+          this.saving.set(false);
+          let name = '';
+          try { name = yamlToResource(this.yamlContent).metadata?.name || ''; } catch { /* ignore */ }
+          this.luigiClient.linkManager().goBack({ created: name });
+        },
+        error: (err: Error) => {
+          this.saving.set(false);
+          this.yamlValidationErrors.set([`Failed to create resource: ${err.message || 'Unknown error'}`]);
+        },
+      });
+    } else {
+      const resource = this.buildResourceFromForm();
+      this.resourceService.create(resource, resourceDef, context).pipe(take(1)).subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.luigiClient.linkManager().goBack({ created: resource.metadata.name });
+        },
+        error: (err: Error) => {
+          this.saving.set(false);
+          this.yamlValidationErrors.set([`Failed to create resource: ${err.message || 'Unknown error'}`]);
+        },
+      });
+    }
   }
 
   private validateYaml(): boolean {
