@@ -21,7 +21,7 @@ import { BusyIndicatorComponent } from '@fundamental-ngx/core/busy-indicator';
 import { Store } from '@ngrx/store';
 import { Subject, take, takeUntil, pairwise, startWith } from 'rxjs';
 import { Resource } from 'models/index';
-import { createResource, updateResource } from 'state/resources/resources.actions';
+import { applyYaml, createResource, updateResource } from 'state/resources/resources.actions';
 import {
   selectResourceByName,
   selectSaving,
@@ -404,26 +404,29 @@ export class CreateEditModalComponent implements OnInit, OnDestroy {
   }
 
   protected onSubmit(): void {
-    let resource: Resource;
-
     if (this.editorMode() === 'yaml') {
       if (!this.validateYaml()) {
         return;
       }
-      try {
-        resource = yamlToResource(this.yamlContent);
-      } catch {
-        this.yamlValidationErrors.set(['Invalid YAML syntax']);
-        return;
+      if (this.isEditMode()) {
+        let resource: Resource;
+        try {
+          resource = yamlToResource(this.yamlContent);
+        } catch {
+          this.yamlValidationErrors.set(['Invalid YAML syntax']);
+          return;
+        }
+        this.store.dispatch(updateResource({ resource }));
+      } else {
+        this.store.dispatch(applyYaml({ yaml: this.yamlContent }));
       }
     } else {
-      resource = this.buildResourceFromForm();
-    }
-
-    if (this.isEditMode()) {
-      this.store.dispatch(updateResource({ resource }));
-    } else {
-      this.store.dispatch(createResource({ resource }));
+      const resource = this.buildResourceFromForm();
+      if (this.isEditMode()) {
+        this.store.dispatch(updateResource({ resource }));
+      } else {
+        this.store.dispatch(createResource({ resource }));
+      }
     }
 
     this.store.dispatch(closeModal());
