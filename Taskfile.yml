@@ -102,10 +102,11 @@ tasks:
       - "{{.CONTAINER_RUNTIME}} build -t {{.IMAGE_REPO}}:latest ."
 
   docker:kind:
-    desc: "Build container image with current tag from kind cluster and load it"
+    desc: "Build container image, load into kind cluster, and restart deployment"
     vars:
+      KIND_CONTEXT: kind-{{.KIND_CLUSTER}}
       IMAGE_NAME:
-        sh: kubectl get deployment {{.DEPLOYMENT_NAME}} -n {{.DEPLOYMENT_NAMESPACE}} -o jsonpath='{.spec.template.spec.containers[0].image}'
+        sh: kubectl --context {{.KIND_CONTEXT}} get deployment {{.DEPLOYMENT_NAME}} -n {{.DEPLOYMENT_NAMESPACE}} -o jsonpath='{.spec.template.spec.containers[0].image}'
     cmds:
       - echo "Building image {{.IMAGE_NAME}} using {{.CONTAINER_RUNTIME}}"
       - "{{.CONTAINER_RUNTIME}} build -t {{.IMAGE_NAME}} ."
@@ -117,9 +118,9 @@ tasks:
         else
           kind load docker-image {{.IMAGE_NAME}} --name {{.KIND_CLUSTER}}
         fi
-      - kubectl rollout restart deployment/{{.DEPLOYMENT_NAME}} -n {{.DEPLOYMENT_NAMESPACE}}
+      - kubectl --context {{.KIND_CONTEXT}} rollout restart deployment/{{.DEPLOYMENT_NAME}} -n {{.DEPLOYMENT_NAMESPACE}}
       - echo "Waiting for rollout to complete..."
-      - kubectl rollout status deployment/{{.DEPLOYMENT_NAME}} -n {{.DEPLOYMENT_NAMESPACE}} --timeout=120s
+      - kubectl --context {{.KIND_CONTEXT}} rollout status deployment/{{.DEPLOYMENT_NAME}} -n {{.DEPLOYMENT_NAMESPACE}} --timeout=120s
       - echo "Deployment ready!"
 
   validate:
