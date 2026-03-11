@@ -1,6 +1,6 @@
 {
   "name": "generic-resource-ui",
-  "version": "0.0.1",
+  "version": "0.1.2",
   "scripts": {
     "preinstall": "npx only-allow npm",
     "start": "ng serve --serve-path=/ui/generic-resource --ssl --ssl-cert=certs/localhost+2.pem --ssl-key=certs/localhost+2-key.pem",

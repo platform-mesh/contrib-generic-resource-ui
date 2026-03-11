@@ -12,23 +12,22 @@ export class NavigationService {
   private store = inject(Store);
 
   navigateToResource(resourceName: string, namespace?: string): void {
-    // Update the namespace in state before navigating
     if (namespace) {
       this.store.dispatch(setNamespace({ namespaceId: namespace }));
     }
 
     if (this.isInLuigiContext()) {
-      // In Luigi context, use withParams for query parameters
-      const linkManager = LuigiClient.linkManager();
-      if (namespace) {
-        linkManager.withParams({ namespace }).navigate(resourceName);
-      } else {
-        linkManager.navigate(resourceName);
-      }
+      // Navigate via Luigi for proper browser history and parent URL sync.
+      // For namespaced resources, encode as ns/name in the path (e.g., default/my-resource).
+      // For cluster-scoped resources, just the name (e.g., my-resource).
+      const path = namespace ? `${namespace}/${resourceName}` : resourceName;
+      LuigiClient.linkManager().navigate(path);
     } else {
-      // Standalone mode: use query params
-      const queryParams = namespace ? { namespace } : {};
-      this.router.navigate(['/', resourceName], { queryParams });
+      if (namespace) {
+        this.router.navigate(['/', namespace, resourceName]);
+      } else {
+        this.router.navigate(['/', resourceName]);
+      }
     }
   }
 

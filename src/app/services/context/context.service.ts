@@ -9,7 +9,7 @@ import { Store } from '@ngrx/store';
 import deepmerge from 'deepmerge';
 import { NodeContext, ResourceNodeContext } from 'models/index';
 import { Observable, map, timer, take } from 'rxjs';
-import { contextInitialized, contextUpdated, setNamespace } from 'state/context/context.actions';
+import { contextInitialized, contextUpdated } from 'state/context/context.actions';
 
 @Injectable({
   providedIn: 'root',
@@ -156,14 +156,6 @@ export class ContextService {
     // Check regular query params (e.g., ?namespace=default)
     const params = new URLSearchParams(window.location.search);
     return params.get('namespace');
-  }
-
-  updateNamespaceFromUrl(): void {
-    const namespace = this.getNamespaceFromUrl();
-    if (namespace) {
-      console.log('[ContextService] Updating namespace from URL:', namespace);
-      this.store.dispatch(setNamespace({ namespaceId: namespace }));
-    }
   }
 
   private fixGatewayUrl(context: NodeContext): NodeContext['portalContext'] {

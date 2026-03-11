@@ -20,7 +20,7 @@ import {
 import { Store } from '@ngrx/store';
 import { ContextService } from 'services/context/context.service';
 import { LuigiClientService } from 'services/luigi/luigi-client.service';
-import { selectResourceDefinition, selectUiTitle } from 'state/context/context.selectors';
+import { selectResourceDefinition, selectNamespaceId, selectUiTitle } from 'state/context/context.selectors';
 import { humanizeFieldName } from 'utils/humanize';
 import {
   selectResources,
@@ -70,6 +70,7 @@ import { selectSearchTerm } from 'state/ui/ui.selectors';
             [resources]="filteredResources()"
             [fieldAnalysis]="fieldAnalysis()"
             [searchTerm]="searchTerm()"
+            [showNamespaceColumn]="showNamespaceColumn()"
           ></app-resource-table>
         </fdp-dynamic-page-content>
       </fdp-dynamic-page>
@@ -93,6 +94,9 @@ export class ResourceListViewComponent implements OnInit {
   protected readonly resourceDefinition = toSignal(
     this.store.select(selectResourceDefinition)
   );
+  private readonly namespaceId = toSignal(
+    this.store.select(selectNamespaceId)
+  );
   protected readonly resources = toSignal(this.store.select(selectResources), {
     initialValue: [],
   });
@@ -112,6 +116,13 @@ export class ResourceListViewComponent implements OnInit {
   );
 
   protected readonly uiTitle = toSignal(this.store.select(selectUiTitle));
+
+  // Show namespace column for namespaced resources when no specific namespace is set
+  protected readonly showNamespaceColumn = computed(() => {
+    const def = this.resourceDefinition();
+    const nsId = this.namespaceId();
+    return def?.scope === 'Namespaced' && !nsId;
+  });
 
   protected readonly loading = () =>
     this.resourcesLoading() || this.schemaLoading();

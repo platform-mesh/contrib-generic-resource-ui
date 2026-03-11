@@ -140,13 +140,26 @@ export class ResourceTableComponent {
   readonly resources = input<Resource[]>([]);
   readonly fieldAnalysis = input<FieldAnalysis | null | undefined>();
   readonly searchTerm = input<string>('');
+  readonly showNamespaceColumn = input<boolean>(false);
 
   protected readonly columns = computed((): ListColumn[] => {
     const analysis = this.fieldAnalysis();
-    if (!analysis) {
-      return this.getDefaultColumns();
+    const base = analysis
+      ? this.columnGenerator.generateColumns(analysis)
+      : this.getDefaultColumns();
+
+    if (this.showNamespaceColumn()) {
+      const nsColumn: ListColumn = {
+        key: 'namespace',
+        label: 'Namespace',
+        path: 'metadata.namespace',
+        sortable: true,
+        type: 'text',
+        priority: 1,
+      };
+      return [base[0], nsColumn, ...base.slice(1)].sort((a, b) => a.priority - b.priority);
     }
-    return this.columnGenerator.generateColumns(analysis);
+    return base;
   });
 
   protected getColumnValue(resource: Resource, column: ListColumn): any {

@@ -37,6 +37,7 @@ import { combineLatest, distinctUntilChanged, filter, map, switchMap, take } fro
 import { ContextService } from 'services/context/context.service';
 import { ReadyStatusDetectorService } from 'services/view-generator/ready-status-detector.service';
 import { selectIsContextInitialized, selectNamespaceId, selectResourceDefinition, selectResourceId } from 'state/context/context.selectors';
+import { setNamespace } from 'state/context/context.actions';
 import { loadResourceDetail } from 'state/resources/resources.actions';
 import {
   selectDetailLoading,
@@ -426,8 +427,13 @@ export class ResourceDetailViewComponent implements OnInit {
   ngOnInit(): void {
     this.contextService.initialize();
 
-    // Check for namespace in URL query params and update context
-    this.contextService.updateNamespaceFromUrl();
+    // Read namespace from route params (e.g., /:namespace/:name) and set in store
+    this.route.paramMap.pipe(take(1)).subscribe((params) => {
+      const namespace = params.get('namespace');
+      if (namespace) {
+        this.store.dispatch(setNamespace({ namespaceId: namespace }));
+      }
+    });
 
     // React to context/schema readiness AND route changes
     // This ensures we reload the resource when:

@@ -30,6 +30,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: ':namespace/:name',
+    loadComponent: () =>
+      import('./components/resource-detail-view/resource-detail-view.component').then(
+        (m) => m.ResourceDetailViewComponent
+      ),
+  },
+  {
     path: ':name',
     loadComponent: () =>
       import('./components/resource-detail-view/resource-detail-view.component').then(
