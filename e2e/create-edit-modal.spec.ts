@@ -136,9 +136,9 @@ test.describe('Create/Edit Modal', () => {
     const hasBackdrop = await luigiBackdrop.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (modalFrame) {
-      // Modal is in iframe - check for content
-      const nameInput = modalFrame.locator('[test-id="create-field-metadata_name"]');
-      await expect(nameInput).toBeVisible({ timeout: 10000 });
+      // Modal is in iframe - check for Monaco YAML editor
+      const monacoEditor = modalFrame.locator('app-monaco-yaml-viewer');
+      await expect(monacoEditor).toBeVisible({ timeout: 10000 });
     } else if (hasBackdrop) {
       // Backdrop visible means modal is opening
       expect(hasBackdrop).toBe(true);
@@ -152,7 +152,7 @@ test.describe('Create/Edit Modal', () => {
     await page.screenshot({ path: 'test-results/modal-open.png' });
   });
 
-  test('should render modal with form mode by default', async ({ page }) => {
+  test('should render modal with YAML editor by default', async ({ page }) => {
     const frame = await getAppFrame(page);
 
     // Click Create button
@@ -170,78 +170,13 @@ test.describe('Create/Edit Modal', () => {
     const modalFrame = await getLuigiModalFrame(page);
 
     if (modalFrame) {
-      // Verify form elements are visible
-      const nameInput = modalFrame.locator('[test-id="create-field-metadata_name"]');
-      await expect(nameInput).toBeVisible({ timeout: 10000 });
+      // Verify Monaco YAML editor is visible
+      const monacoEditor = modalFrame.locator('app-monaco-yaml-viewer');
+      await expect(monacoEditor).toBeVisible({ timeout: 10000 });
 
-      // Check for mode selector (Form/YAML buttons)
+      // Verify no Form/YAML toggle buttons exist
       const formButton = modalFrame.locator('button').filter({ hasText: 'Form' });
-      const yamlButton = modalFrame.locator('button').filter({ hasText: 'YAML' });
-
-      await expect(formButton).toBeVisible();
-      await expect(yamlButton).toBeVisible();
-
-      // Form button should be selected by default
-      await expect(formButton).toHaveClass(/is-selected/);
-    }
-
-    await page.screenshot({ path: 'test-results/modal-form-mode.png' });
-  });
-
-  test('should display name input field in form mode', async ({ page }) => {
-    const frame = await getAppFrame(page);
-
-    // Click Create button
-    let createButton;
-    if (frame) {
-      createButton = frame.locator('[test-id="generic-list-view-create-button"]').first();
-    } else {
-      createButton = page.locator('[test-id="generic-list-view-create-button"]').first();
-    }
-    await createButton.click();
-
-    await page.waitForTimeout(2000);
-
-    const modalFrame = await getLuigiModalFrame(page);
-
-    if (modalFrame) {
-      // Check for Name input field
-      const nameInput = modalFrame.locator('[test-id="create-field-metadata_name"]');
-      await expect(nameInput).toBeVisible({ timeout: 10000 });
-
-      // Check for Name label
-      const nameLabel = modalFrame.locator('label').filter({ hasText: 'Name' });
-      await expect(nameLabel).toBeVisible();
-    }
-  });
-
-  test('should switch to YAML mode when clicking YAML button', async ({ page }) => {
-    const frame = await getAppFrame(page);
-
-    // Click Create button
-    let createButton;
-    if (frame) {
-      createButton = frame.locator('[test-id="generic-list-view-create-button"]').first();
-    } else {
-      createButton = page.locator('[test-id="generic-list-view-create-button"]').first();
-    }
-    await createButton.click();
-
-    await page.waitForTimeout(2000);
-
-    const modalFrame = await getLuigiModalFrame(page);
-
-    if (modalFrame) {
-      // Click YAML button
-      const yamlButton = modalFrame.locator('button').filter({ hasText: 'YAML' });
-      await yamlButton.click();
-
-      // Verify YAML editor is visible
-      const yamlEditor = modalFrame.locator('textarea.yaml-editor');
-      await expect(yamlEditor).toBeVisible({ timeout: 5000 });
-
-      // YAML button should now be selected
-      await expect(yamlButton).toHaveClass(/is-selected/);
+      await expect(formButton).toHaveCount(0);
     }
 
     await page.screenshot({ path: 'test-results/modal-yaml-mode.png' });
@@ -264,81 +199,20 @@ test.describe('Create/Edit Modal', () => {
     const modalFrame = await getLuigiModalFrame(page);
 
     if (modalFrame) {
-      // Switch to YAML mode
-      const yamlButton = modalFrame.locator('button').filter({ hasText: 'YAML' });
-      await yamlButton.click();
+      // Verify Monaco editor is visible
+      const monacoEditor = modalFrame.locator('app-monaco-yaml-viewer');
+      await expect(monacoEditor).toBeVisible({ timeout: 10000 });
 
-      // Get YAML content
-      const yamlEditor = modalFrame.locator('textarea.yaml-editor');
-      await expect(yamlEditor).toBeVisible({ timeout: 5000 });
+      // Monaco editor renders content in .view-lines - check for YAML content
+      const editorContent = modalFrame.locator('.editor-container .view-lines');
+      await expect(editorContent).toBeVisible({ timeout: 5000 });
 
-      const yamlContent = await yamlEditor.inputValue();
-
-      // YAML should contain basic resource structure
-      expect(yamlContent).toContain('apiVersion:');
-      expect(yamlContent).toContain('kind:');
-      expect(yamlContent).toContain('metadata:');
-      expect(yamlContent).toContain('name:');
-    }
-  });
-
-  test('should show validation error for invalid kubernetes name', async ({ page }) => {
-    const frame = await getAppFrame(page);
-
-    // Click Create button
-    let createButton;
-    if (frame) {
-      createButton = frame.locator('[test-id="generic-list-view-create-button"]').first();
-    } else {
-      createButton = page.locator('[test-id="generic-list-view-create-button"]').first();
-    }
-    await createButton.click();
-
-    await page.waitForTimeout(2000);
-
-    const modalFrame = await getLuigiModalFrame(page);
-
-    if (modalFrame) {
-      // Enter an invalid name (uppercase not allowed)
-      const nameInput = modalFrame.locator('[test-id="create-field-metadata_name"]');
-      await nameInput.fill('Invalid-Name');
-      await nameInput.blur();
-
-      // Check for error message
-      const errorMessage = modalFrame.locator('.field-error');
-      await expect(errorMessage).toBeVisible({ timeout: 5000 });
-      await expect(errorMessage).toContainText('lowercase');
-    }
-
-    await page.screenshot({ path: 'test-results/modal-validation-error.png' });
-  });
-
-  test('should show validation error for empty required name', async ({ page }) => {
-    const frame = await getAppFrame(page);
-
-    // Click Create button
-    let createButton;
-    if (frame) {
-      createButton = frame.locator('[test-id="generic-list-view-create-button"]').first();
-    } else {
-      createButton = page.locator('[test-id="generic-list-view-create-button"]').first();
-    }
-    await createButton.click();
-
-    await page.waitForTimeout(2000);
-
-    const modalFrame = await getLuigiModalFrame(page);
-
-    if (modalFrame) {
-      // Focus and blur the name input without entering value
-      const nameInput = modalFrame.locator('[test-id="create-field-metadata_name"]');
-      await nameInput.focus();
-      await nameInput.blur();
-
-      // Check for required error message
-      const errorMessage = modalFrame.locator('.field-error');
-      await expect(errorMessage).toBeVisible({ timeout: 5000 });
-      await expect(errorMessage).toContainText('required');
+      // Check that the editor contains resource template keywords
+      const editorText = await editorContent.textContent();
+      expect(editorText).toContain('apiVersion');
+      expect(editorText).toContain('kind');
+      expect(editorText).toContain('metadata');
+      expect(editorText).toContain('name');
     }
   });
 
@@ -405,67 +279,5 @@ test.describe('Create/Edit Modal', () => {
     }
 
     await page.screenshot({ path: 'test-results/modal-closed.png' });
-  });
-
-  test('should sync form data to YAML when switching modes', async ({ page }) => {
-    const frame = await getAppFrame(page);
-
-    // Click Create button
-    let createButton;
-    if (frame) {
-      createButton = frame.locator('[test-id="generic-list-view-create-button"]').first();
-    } else {
-      createButton = page.locator('[test-id="generic-list-view-create-button"]').first();
-    }
-    await createButton.click();
-
-    await page.waitForTimeout(2000);
-
-    const modalFrame = await getLuigiModalFrame(page);
-
-    if (modalFrame) {
-      // Enter a name in form mode
-      const nameInput = modalFrame.locator('[test-id="create-field-metadata_name"]');
-      await nameInput.fill('my-test-resource');
-
-      // Switch to YAML mode
-      const yamlButton = modalFrame.locator('button').filter({ hasText: 'YAML' });
-      await yamlButton.click();
-
-      // Verify name is in YAML
-      const yamlEditor = modalFrame.locator('textarea.yaml-editor');
-      const yamlContent = await yamlEditor.inputValue();
-      expect(yamlContent).toContain('name: my-test-resource');
-    }
-  });
-
-  test('should disable Create button when form is invalid', async ({ page }) => {
-    const frame = await getAppFrame(page);
-
-    // Click Create button
-    let createButton;
-    if (frame) {
-      createButton = frame.locator('[test-id="generic-list-view-create-button"]').first();
-    } else {
-      createButton = page.locator('[test-id="generic-list-view-create-button"]').first();
-    }
-    await createButton.click();
-
-    await page.waitForTimeout(2000);
-
-    const modalFrame = await getLuigiModalFrame(page);
-
-    if (modalFrame) {
-      // With empty form, Create button should be disabled
-      const submitButton = modalFrame.locator('[test-id="create-resource-submit"]');
-      await expect(submitButton).toBeDisabled();
-
-      // Enter valid name
-      const nameInput = modalFrame.locator('[test-id="create-field-metadata_name"]');
-      await nameInput.fill('valid-name');
-
-      // Create button should now be enabled (assuming no other required fields)
-      await expect(submitButton).toBeEnabled();
-    }
   });
 });

@@ -25,6 +25,7 @@ export interface UiState {
   editingResourceName: string | null;
   deleteConfirmationOpen: boolean;
   deletingResourceName: string | null;
+  deletingResourceNamespace: string | null;
   yamlPanelOpen: boolean;
   pagination: {
     page: number;
@@ -48,6 +49,7 @@ export const initialState: UiState = {
   editingResourceName: null,
   deleteConfirmationOpen: false,
   deletingResourceName: null,
+  deletingResourceNamespace: null,
   yamlPanelOpen: false,
   pagination: {
     page: 1,
@@ -93,15 +95,17 @@ export const uiReducer = createReducer(
     modalMode: null,
     editingResourceName: null,
   })),
-  on(openDeleteConfirmation, (state, { resourceName }): UiState => ({
+  on(openDeleteConfirmation, (state, { resourceName, resourceNamespace }): UiState => ({
     ...state,
     deleteConfirmationOpen: true,
     deletingResourceName: resourceName,
+    deletingResourceNamespace: resourceNamespace ?? null,
   })),
   on(closeDeleteConfirmation, (state): UiState => ({
     ...state,
     deleteConfirmationOpen: false,
     deletingResourceName: null,
+    deletingResourceNamespace: null,
   })),
   on(openYamlPanel, (state): UiState => ({
     ...state,

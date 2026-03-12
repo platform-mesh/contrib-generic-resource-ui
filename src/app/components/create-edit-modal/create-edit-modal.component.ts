@@ -9,19 +9,14 @@ import {
   TemplateRef,
   ViewChild,
 } from '@angular/core';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ButtonComponent } from '@fundamental-ngx/core/button';
 import { ButtonBarComponent } from '@fundamental-ngx/core/bar';
 import { DialogModule, DialogService, DialogRef } from '@fundamental-ngx/core/dialog';
-import { FormItemComponent, FormLabelComponent, FormControlComponent } from '@fundamental-ngx/core/form';
-import { InputGroupModule } from '@fundamental-ngx/core/input-group';
-import { SegmentedButtonModule } from '@fundamental-ngx/core/segmented-button';
 import { BusyIndicatorComponent } from '@fundamental-ngx/core/busy-indicator';
 import { Store } from '@ngrx/store';
 import { Subject, take, takeUntil, pairwise, startWith } from 'rxjs';
-import { Resource } from 'models/index';
-import { applyYaml, createResource, updateResource } from 'state/resources/resources.actions';
+import { applyYaml, updateResource } from 'state/resources/resources.actions';
 import {
   selectResourceByName,
   selectSaving,
@@ -34,28 +29,19 @@ import {
   selectModalOpen,
 } from 'state/ui/ui.selectors';
 import { closeModal } from 'state/ui/ui.actions';
-import { FormFieldGeneratorService } from 'services/view-generator/form-field-generator.service';
 import { YamlTemplateGeneratorService } from 'services/view-generator/yaml-template-generator.service';
 import { resourceToYaml, yamlToResource, stripTypename } from 'utils/yaml-utils';
-import { k8sNameValidator } from 'validators/k8s-name-validator';
 import { LuigiDialogService } from 'services/index';
-
-type EditorMode = 'form' | 'yaml';
+import { MonacoYamlViewerComponent } from '../shared/monaco-yaml-viewer/monaco-yaml-viewer.component';
 
 @Component({
   selector: 'app-create-edit-modal',
   imports: [
-    FormsModule,
-    ReactiveFormsModule,
     ButtonComponent,
     ButtonBarComponent,
     DialogModule,
-    FormItemComponent,
-    FormLabelComponent,
-    FormControlComponent,
-    InputGroupModule,
-    SegmentedButtonModule,
     BusyIndicatorComponent,
+    MonacoYamlViewerComponent,
   ],
   template: `
     <ng-template #dialogTemplate>
@@ -66,110 +52,20 @@ type EditorMode = 'form' | 'yaml';
 
         <fd-dialog-body>
           <fd-busy-indicator [loading]="saving()" size="m" [block]="true">
-            <div class="mode-selector">
-              <fd-segmented-button>
-                <button
-                  fd-button
-                  [class.is-selected]="editorMode() === 'form'"
-                  (click)="setEditorMode('form')"
-                >
-                  Form
-                </button>
-                <button
-                  fd-button
-                  [class.is-selected]="editorMode() === 'yaml'"
-                  (click)="setEditorMode('yaml')"
-                >
-                  YAML
-                </button>
-              </fd-segmented-button>
+            <p class="editor-description">{{ description() }}</p>
+            <div class="yaml-editor-container">
+              <app-monaco-yaml-viewer
+                [content]="yamlContent()"
+                [readOnly]="false"
+                (contentChanged)="onYamlContentChanged($event)"
+              />
             </div>
-
-            @if (editorMode() === 'form') {
-              <form [formGroup]="resourceForm">
-                <div fd-form-item>
-                  <label fd-form-label [required]="true" for="resource-name">Name</label>
-                  <input
-                    fd-form-control
-                    id="resource-name"
-                    formControlName="name"
-                    placeholder="Enter resource name (e.g., my-resource)"
-                    [readonly]="isEditMode()"
-                    [state]="getFieldState('name')"
-                  />
-                  @if (resourceForm.get('name')?.hasError('k8sNameInvalid') &&
-                       resourceForm.get('name')?.touched) {
-                    <span class="field-error">
-                      Name must be lowercase, start and end with alphanumeric, contain only letters, numbers, and hyphens
-                    </span>
-                  }
-                  @if (resourceForm.get('name')?.hasError('required') &&
-                       resourceForm.get('name')?.touched) {
-                    <span class="field-error">Name is required</span>
-                  }
-                </div>
-
-                @for (field of formFields(); track field.key) {
-                  <div fd-form-item>
-                    <label fd-form-label [required]="field.required" [for]="'field-' + field.key">
-                      {{ field.label }}
-                    </label>
-                    @if (field.type === 'boolean') {
-                      <input
-                        type="checkbox"
-                        fd-form-control
-                        [id]="'field-' + field.key"
-                        [formControlName]="field.key"
-                      />
-                    } @else if (field.type === 'number') {
-                      <input
-                        type="number"
-                        fd-form-control
-                        [id]="'field-' + field.key"
-                        [formControlName]="field.key"
-                        [placeholder]="field.placeholder || ''"
-                        [state]="getFieldState(field.key)"
-                      />
-                    } @else if (field.type === 'yaml' || field.type === 'textarea') {
-                      <textarea
-                        fd-form-control
-                        [id]="'field-' + field.key"
-                        [formControlName]="field.key"
-                        [placeholder]="field.placeholder || ''"
-                        rows="5"
-                        [state]="getFieldState(field.key)"
-                      ></textarea>
-                    } @else {
-                      <input
-                        type="text"
-                        fd-form-control
-                        [id]="'field-' + field.key"
-                        [formControlName]="field.key"
-                        [placeholder]="field.placeholder || ''"
-                        [state]="getFieldState(field.key)"
-                      />
-                    }
-                    @if (resourceForm.get(field.key)?.hasError('required') &&
-                         resourceForm.get(field.key)?.touched) {
-                      <span class="field-error">{{ field.label }} is required</span>
-                    }
-                  </div>
+            @if (yamlValidationErrors().length > 0) {
+              <div class="yaml-errors">
+                @for (error of yamlValidationErrors(); track error) {
+                  <div class="yaml-error">{{ error }}</div>
                 }
-              </form>
-            } @else {
-              <textarea
-                class="yaml-editor"
-                [(ngModel)]="yamlContent"
-                (ngModelChange)="onYamlChange()"
-                rows="20"
-              ></textarea>
-              @if (yamlValidationErrors().length > 0) {
-                <div class="yaml-errors">
-                  @for (error of yamlValidationErrors(); track error) {
-                    <div class="yaml-error">{{ error }}</div>
-                  }
-                </div>
-              }
+              </div>
             }
           </fd-busy-indicator>
         </fd-dialog-body>
@@ -190,13 +86,16 @@ type EditorMode = 'form' | 'yaml';
   `,
   styles: [
     `
-      .mode-selector {
-        margin-bottom: 1rem;
-      }
-      .yaml-editor {
-        width: 100%;
-        font-family: monospace;
+      .editor-description {
+        color: var(--sapContent_LabelColor, #6a6d70);
         font-size: 0.875rem;
+        margin: 0 0 0.75rem 0;
+      }
+      .yaml-editor-container {
+        height: 400px;
+        border: 1px solid var(--sapField_BorderColor, #89919a);
+        border-radius: 4px;
+        overflow: hidden;
       }
       .yaml-error {
         color: var(--sapNegativeColor);
@@ -206,21 +105,13 @@ type EditorMode = 'form' | 'yaml';
       .yaml-errors {
         margin-top: 0.5rem;
       }
-      .field-error {
-        color: var(--sapNegativeColor);
-        font-size: 0.75rem;
-        margin-top: 0.25rem;
-        display: block;
-      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateEditModalComponent implements OnInit, OnDestroy {
   private store = inject(Store);
-  private fb = inject(FormBuilder);
   private dialogService = inject(DialogService);
-  private formFieldGenerator = inject(FormFieldGeneratorService);
   private yamlTemplateGenerator = inject(YamlTemplateGeneratorService);
   private luigiDialogService = inject(LuigiDialogService);
   private destroy$ = new Subject<void>();
@@ -242,32 +133,24 @@ export class CreateEditModalComponent implements OnInit, OnDestroy {
     initialValue: false,
   });
 
-  protected readonly editorMode = signal<EditorMode>('form');
   protected readonly yamlValidationErrors = signal<string[]>([]);
-  protected yamlContent = '';
-  protected resourceForm: FormGroup;
+  protected readonly yamlContent = signal('');
 
   protected readonly isEditMode = computed(() => this.modalMode() === 'edit');
   protected readonly title = computed(() =>
     this.isEditMode() ? 'Edit Resource' : 'Create Resource'
   );
-
-  protected readonly formFields = computed(() => {
-    const analysis = this.fieldAnalysis();
-    if (!analysis) {
-      return [];
+  protected readonly description = computed(() => {
+    const kind = this.resourceDefinition()?.kind;
+    if (this.isEditMode()) {
+      return kind
+        ? `Edit the YAML definition of this ${kind} resource.`
+        : 'Edit the YAML definition of this resource.';
     }
-    return this.formFieldGenerator.generateFormFields(
-      analysis.requiredInputFields,
-      analysis.scalarSpecFields
-    ).filter(f => f.key !== 'name');
+    return kind
+      ? `Define a new ${kind} resource using YAML. A template has been provided below.`
+      : 'Define a new resource using YAML.';
   });
-
-  constructor() {
-    this.resourceForm = this.fb.group({
-      name: ['', [Validators.required, k8sNameValidator]],
-    });
-  }
 
   ngOnInit(): void {
     // Watch for modal open/close state changes
@@ -294,7 +177,7 @@ export class CreateEditModalComponent implements OnInit, OnDestroy {
     // Add Luigi backdrop
     this.luigiDialogService.dialogOpened();
 
-    // Initialize form based on mode
+    // Initialize YAML content based on mode
     this.initializeModal();
 
     // Open dialog using DialogService
@@ -318,15 +201,14 @@ export class CreateEditModalComponent implements OnInit, OnDestroy {
       this.dialogRef.close();
       this.dialogRef = null;
     }
-    this.resetForm();
+    this.yamlContent.set('');
+    this.yamlValidationErrors.set([]);
   }
 
   private initializeModal(): void {
     const mode = this.modalMode();
     const editingName = this.editingResourceName();
-
-    // Build dynamic form controls based on schema
-    this.buildDynamicFormControls();
+    console.log('[Modal] initializeModal called, mode:', mode, 'editingName:', editingName);
 
     if (mode === 'edit' && editingName) {
       this.store
@@ -334,69 +216,39 @@ export class CreateEditModalComponent implements OnInit, OnDestroy {
         .pipe(take(1))
         .subscribe((resource) => {
           if (resource) {
-            this.loadResourceIntoForm(resource);
+            const yaml = resourceToYaml(stripTypename(resource));
+            console.log('[Modal] edit mode, setting yaml content length:', yaml.length);
+            this.yamlContent.set(yaml);
+            this.yamlValidationErrors.set([]);
           }
         });
     } else {
       // Create mode: generate default YAML template
       const analysis = this.fieldAnalysis();
       const resourceDef = this.resourceDefinition();
+      console.log('[Modal] create mode, hasAnalysis:', !!analysis, 'hasResourceDef:', !!resourceDef);
       if (analysis && resourceDef) {
         const defaultResource = this.yamlTemplateGenerator.buildDefaultResource(
           resourceDef,
           analysis
         );
-        this.yamlContent = resourceToYaml(defaultResource);
+        const yaml = resourceToYaml(defaultResource);
+        console.log('[Modal] setting template yaml, length:', yaml.length, 'preview:', yaml.substring(0, 80));
+        this.yamlContent.set(yaml);
+      } else {
+        console.log('[Modal] WARNING: no analysis or resourceDef available for template generation');
       }
       this.yamlValidationErrors.set([]);
     }
   }
 
-  private buildDynamicFormControls(): void {
-    const fields = this.formFields();
-
-    // Remove old dynamic controls, keep static ones
-    const staticControls = ['name'];
-    Object.keys(this.resourceForm.controls)
-      .filter(key => !staticControls.includes(key))
-      .forEach(key => this.resourceForm.removeControl(key));
-
-    // Add new controls based on schema
-    for (const field of fields) {
-      const validators = field.required ? [Validators.required] : [];
-      this.resourceForm.addControl(
-        field.key,
-        this.fb.control(field.defaultValue ?? '', validators)
-      );
-    }
-  }
-
-  protected getFieldState(fieldName: string): 'error' | 'success' | 'default' {
-    const control = this.resourceForm.get(fieldName);
-    if (control?.invalid && control?.touched) {
-      return 'error';
-    }
-    return 'default';
-  }
-
-  protected setEditorMode(mode: EditorMode): void {
-    if (mode === 'yaml' && this.editorMode() === 'form') {
-      this.syncFormToYaml();
-    } else if (mode === 'form' && this.editorMode() === 'yaml') {
-      this.syncYamlToForm();
-    }
-    this.editorMode.set(mode);
-  }
-
-  protected onYamlChange(): void {
+  protected onYamlContentChanged(content: string): void {
+    this.yamlContent.set(content);
     this.validateYaml();
   }
 
   protected canSubmit(): boolean {
-    if (this.editorMode() === 'form') {
-      return this.resourceForm.valid;
-    }
-    return this.validateYaml();
+    return this.isYamlValid();
   }
 
   protected onCancel(): void {
@@ -404,39 +256,59 @@ export class CreateEditModalComponent implements OnInit, OnDestroy {
   }
 
   protected onSubmit(): void {
-    if (this.editorMode() === 'yaml') {
-      if (!this.validateYaml()) {
+    if (!this.validateYaml()) {
+      return;
+    }
+    if (this.isEditMode()) {
+      let resource;
+      try {
+        resource = yamlToResource(this.yamlContent());
+      } catch {
+        this.yamlValidationErrors.set(['Invalid YAML syntax']);
         return;
       }
-      if (this.isEditMode()) {
-        let resource: Resource;
-        try {
-          resource = yamlToResource(this.yamlContent);
-        } catch {
-          this.yamlValidationErrors.set(['Invalid YAML syntax']);
-          return;
-        }
-        this.store.dispatch(updateResource({ resource }));
-      } else {
-        this.store.dispatch(applyYaml({ yaml: this.yamlContent }));
-      }
+      this.store.dispatch(updateResource({ resource }));
     } else {
-      const resource = this.buildResourceFromForm();
-      if (this.isEditMode()) {
-        this.store.dispatch(updateResource({ resource }));
-      } else {
-        this.store.dispatch(createResource({ resource }));
-      }
+      this.store.dispatch(applyYaml({ yaml: this.yamlContent() }));
     }
 
     this.store.dispatch(closeModal());
+  }
+
+  private isYamlValid(): boolean {
+    try {
+      const resource = yamlToResource(this.yamlContent());
+
+      if (!resource.metadata?.name) {
+        return false;
+      }
+      if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(resource.metadata.name)) {
+        return false;
+      }
+
+      const analysis = this.fieldAnalysis();
+      if (analysis) {
+        for (const field of analysis.requiredInputFields) {
+          if (field.name !== 'name') {
+            const value = resource.spec?.[field.name];
+            if (value === undefined || value === null || value === '') {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private validateYaml(): boolean {
     const errors: string[] = [];
 
     try {
-      const resource = yamlToResource(this.yamlContent);
+      const resource = yamlToResource(this.yamlContent());
 
       // Validate metadata.name
       if (!resource.metadata?.name) {
@@ -463,79 +335,5 @@ export class CreateEditModalComponent implements OnInit, OnDestroy {
 
     this.yamlValidationErrors.set(errors);
     return errors.length === 0;
-  }
-
-  private loadResourceIntoForm(resource: Resource): void {
-    this.resourceForm.patchValue({
-      name: resource.metadata.name,
-    });
-
-    if (resource.spec) {
-      for (const [key, value] of Object.entries(resource.spec)) {
-        if (this.resourceForm.contains(key)) {
-          this.resourceForm.patchValue({ [key]: value });
-        } else {
-          this.resourceForm.addControl(key, this.fb.control(value));
-        }
-      }
-    }
-
-    this.yamlContent = resourceToYaml(stripTypename(resource));
-    this.yamlValidationErrors.set([]);
-  }
-
-  private buildResourceFromForm(): Resource {
-    const formValue = this.resourceForm.value;
-    const { name, ...specFields } = formValue;
-
-    const resourceDef = this.resourceDefinition();
-    const resource: Resource = {
-      metadata: {
-        name,
-      },
-      spec: specFields,
-    };
-
-    // Add apiVersion and kind if we have resource definition
-    if (resourceDef) {
-      resource.apiVersion = `${resourceDef.group}/${resourceDef.version}`;
-      resource.kind = resourceDef.kind;
-    }
-
-    return resource;
-  }
-
-  private syncFormToYaml(): void {
-    const resource = this.buildResourceFromForm();
-    this.yamlContent = resourceToYaml(resource);
-    this.yamlValidationErrors.set([]);
-  }
-
-  private syncYamlToForm(): void {
-    try {
-      const resource = yamlToResource(this.yamlContent);
-      this.resourceForm.patchValue({
-        name: resource.metadata?.name || '',
-      });
-
-      if (resource.spec) {
-        for (const [key, value] of Object.entries(resource.spec)) {
-          if (this.resourceForm.contains(key)) {
-            this.resourceForm.patchValue({ [key]: value });
-          }
-        }
-      }
-
-      this.yamlValidationErrors.set([]);
-    } catch {
-      this.yamlValidationErrors.set(['Invalid YAML syntax']);
-    }
-  }
-
-  private resetForm(): void {
-    this.resourceForm.reset();
-    this.yamlContent = '';
-    this.yamlValidationErrors.set([]);
-    this.editorMode.set('form');
   }
 }

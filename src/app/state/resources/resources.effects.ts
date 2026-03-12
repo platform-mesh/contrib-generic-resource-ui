@@ -172,7 +172,7 @@ export class ResourcesEffects {
         this.store.select(selectContext),
         this.store.select(selectResourceDefinition)
       ),
-      switchMap(([{ resourceName }, context, resourceDefinition]) => {
+      switchMap(([{ resourceName, resourceNamespace }, context, resourceDefinition]) => {
         if (!context || !resourceDefinition) {
           return of(
             deleteResourceFailure({
@@ -181,8 +181,13 @@ export class ResourcesEffects {
           );
         }
 
+        // Use the resource's own namespace if context doesn't have one
+        const effectiveContext = resourceNamespace && !context.namespaceId
+          ? { ...context, namespaceId: resourceNamespace }
+          : context;
+
         return this.resourceService
-          .delete(resourceName, resourceDefinition, context)
+          .delete(resourceName, resourceDefinition, effectiveContext)
           .pipe(
             map(() => deleteResourceSuccess({ resourceName })),
             catchError((error) =>

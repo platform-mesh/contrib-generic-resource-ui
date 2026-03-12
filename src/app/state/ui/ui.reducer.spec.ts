@@ -101,6 +101,19 @@ describe('UI Reducer', () => {
 
       expect(state.deleteConfirmationOpen).toBe(true);
       expect(state.deletingResourceName).toBe('resource-to-delete');
+      expect(state.deletingResourceNamespace).toBeNull();
+    });
+
+    it('should handle openDeleteConfirmation with namespace', () => {
+      const action = openDeleteConfirmation({
+        resourceName: 'resource-to-delete',
+        resourceNamespace: 'my-namespace',
+      });
+      const state = uiReducer(initialState, action);
+
+      expect(state.deleteConfirmationOpen).toBe(true);
+      expect(state.deletingResourceName).toBe('resource-to-delete');
+      expect(state.deletingResourceNamespace).toBe('my-namespace');
     });
 
     it('should handle closeDeleteConfirmation', () => {
@@ -108,12 +121,14 @@ describe('UI Reducer', () => {
         ...initialState,
         deleteConfirmationOpen: true,
         deletingResourceName: 'resource-to-delete',
+        deletingResourceNamespace: 'my-namespace',
       };
       const action = closeDeleteConfirmation();
       const state = uiReducer(openState, action);
 
       expect(state.deleteConfirmationOpen).toBe(false);
       expect(state.deletingResourceName).toBeNull();
+      expect(state.deletingResourceNamespace).toBeNull();
     });
   });
 

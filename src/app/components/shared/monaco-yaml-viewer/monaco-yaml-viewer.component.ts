@@ -6,6 +6,7 @@ import {
   effect,
   input,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import type * as Monaco from 'monaco-editor';
@@ -34,24 +35,29 @@ export class MonacoYamlViewerComponent implements OnInit, OnDestroy {
   readonly editorContainer = viewChild.required<ElementRef<HTMLDivElement>>('editorContainer');
   readonly contentChanged = output<string>();
 
-  private editor: Monaco.editor.IStandaloneCodeEditor | null = null;
+  private readonly editorReady = signal<Monaco.editor.IStandaloneCodeEditor | null>(null);
   private monaco: typeof Monaco | null = null;
 
   constructor() {
     effect(() => {
+      const editor = this.editorReady();
       const newContent = this.content();
-      if (this.editor && newContent !== undefined) {
-        const currentValue = this.editor.getValue();
+      console.log('[Monaco] content effect:', { hasEditor: !!editor, contentLen: newContent?.length, readOnly: this.readOnly() });
+      if (editor && newContent !== undefined) {
+        const currentValue = editor.getValue();
         if (currentValue !== newContent) {
-          this.editor.setValue(newContent);
+          console.log('[Monaco] setValue called, content length:', newContent.length);
+          editor.setValue(newContent);
         }
       }
     });
 
     effect(() => {
+      const editor = this.editorReady();
       const isReadOnly = this.readOnly();
-      if (this.editor) {
-        this.editor.updateOptions({ readOnly: isReadOnly });
+      console.log('[Monaco] readOnly effect:', { hasEditor: !!editor, isReadOnly });
+      if (editor) {
+        editor.updateOptions({ readOnly: isReadOnly });
       }
     });
   }
@@ -61,13 +67,14 @@ export class MonacoYamlViewerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.editor) {
-      this.editor.dispose();
+    const editor = this.editorReady();
+    if (editor) {
+      editor.dispose();
     }
   }
 
   getValue(): string {
-    return this.editor?.getValue() ?? '';
+    return this.editorReady()?.getValue() ?? '';
   }
 
   private loadMonaco(): void {
@@ -97,8 +104,9 @@ export class MonacoYamlViewerComponent implements OnInit, OnDestroy {
     if (!this.monaco) return;
 
     const container = this.editorContainer().nativeElement;
+    console.log('[Monaco] initEditor called, content():', this.content()?.substring(0, 50), 'readOnly():', this.readOnly());
 
-    this.editor = this.monaco.editor.create(container, {
+    const editor = this.monaco.editor.create(container, {
       value: this.content(),
       language: 'yaml',
       theme: this.getTheme(),
@@ -128,17 +136,21 @@ export class MonacoYamlViewerComponent implements OnInit, OnDestroy {
       contextmenu: !this.readOnly(),
     });
 
-    this.editor.onDidChangeModelContent(() => {
+    editor.onDidChangeModelContent(() => {
       if (!this.readOnly()) {
-        this.contentChanged.emit(this.editor?.getValue() ?? '');
+        this.contentChanged.emit(editor.getValue() ?? '');
       }
     });
 
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (this.monaco && this.editor) {
+      if (this.monaco) {
         this.monaco.editor.setTheme(this.getTheme());
       }
     });
+
+    // Signal that editor is ready — triggers effects to sync content and readOnly
+    console.log('[Monaco] editor created, setting editorReady signal');
+    this.editorReady.set(editor);
   }
 
   private getTheme(): string {

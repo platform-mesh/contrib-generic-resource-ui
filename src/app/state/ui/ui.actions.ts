@@ -23,7 +23,7 @@ export const closeModal = createAction('[UI] Close Modal');
 
 export const openDeleteConfirmation = createAction(
   '[UI] Open Delete Confirmation',
-  props<{ resourceName: string }>()
+  props<{ resourceName: string; resourceNamespace?: string }>()
 );
 
 export const closeDeleteConfirmation = createAction(

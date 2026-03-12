@@ -16,6 +16,7 @@ import { selectDeleting } from 'state/resources/resources.selectors';
 import {
   selectDeleteConfirmationOpen,
   selectDeletingResourceName,
+  selectDeletingResourceNamespace,
 } from 'state/ui/ui.selectors';
 import { closeDeleteConfirmation } from 'state/ui/ui.actions';
 
@@ -146,6 +147,9 @@ export class DeleteConfirmationModalComponent {
     this.store.select(selectDeletingResourceName),
     { initialValue: '' }
   );
+  protected readonly resourceNamespace = toSignal(
+    this.store.select(selectDeletingResourceNamespace)
+  );
   protected readonly deleting = toSignal(this.store.select(selectDeleting), {
     initialValue: false,
   });
@@ -164,7 +168,10 @@ export class DeleteConfirmationModalComponent {
   protected onDelete(): void {
     const name = this.resourceName();
     if (name && this.canDelete()) {
-      this.store.dispatch(deleteResource({ resourceName: name }));
+      this.store.dispatch(deleteResource({
+        resourceName: name,
+        resourceNamespace: this.resourceNamespace() ?? undefined,
+      }));
       this.confirmationInput = '';
       this.store.dispatch(closeDeleteConfirmation());
     }

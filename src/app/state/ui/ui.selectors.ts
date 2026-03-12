@@ -38,6 +38,11 @@ export const selectDeletingResourceName = createSelector(
   (state) => state.deletingResourceName
 );
 
+export const selectDeletingResourceNamespace = createSelector(
+  selectUiState,
+  (state) => state.deletingResourceNamespace
+);
+
 export const selectYamlPanelOpen = createSelector(
   selectUiState,
   (state) => state.yamlPanelOpen

@@ -75,7 +75,7 @@ export const updateResourceFailure = createAction(
 
 export const deleteResource = createAction(
   '[Resources] Delete',
-  props<{ resourceName: string }>()
+  props<{ resourceName: string; resourceNamespace?: string }>()
 );
 
 export const deleteResourceSuccess = createAction(

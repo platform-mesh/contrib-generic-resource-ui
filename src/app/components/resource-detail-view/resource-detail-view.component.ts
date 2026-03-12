@@ -486,7 +486,10 @@ export class ResourceDetailViewComponent implements OnInit {
   onDelete(): void {
     const res = this.resource();
     if (res) {
-      this.store.dispatch(openDeleteConfirmation({ resourceName: res.metadata.name }));
+      this.store.dispatch(openDeleteConfirmation({
+        resourceName: res.metadata.name,
+        resourceNamespace: res.metadata.namespace,
+      }));
     }
   }
 

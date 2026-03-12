@@ -183,7 +183,10 @@ export class ResourceTableComponent {
 
   protected onDelete(resource: Resource): void {
     this.store.dispatch(
-      openDeleteConfirmation({ resourceName: resource.metadata.name })
+      openDeleteConfirmation({
+        resourceName: resource.metadata.name,
+        resourceNamespace: resource.metadata.namespace,
+      })
     );
   }
 
