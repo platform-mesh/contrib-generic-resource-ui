@@ -1,5 +1,6 @@
-# Build stage
-FROM node:24.14.0-alpine AS builder
+# Build stage — pinned to amd64 because npm produces platform-independent
+# static files and Node under QEMU ARM64 emulation crashes (signal 4).
+FROM --platform=linux/amd64 node:24.14.0-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
