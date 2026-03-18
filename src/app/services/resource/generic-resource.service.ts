@@ -78,6 +78,7 @@ export class GenericResourceService {
         query: gql`${listQuery}`,
         variables,
         fetchPolicy: 'no-cache',
+        errorPolicy: 'all',
       })
       .pipe(
         map((res: any): ResourceListResult => {
@@ -204,6 +205,7 @@ export class GenericResourceService {
         query: gql`${readQuery}`,
         variables,
         fetchPolicy: 'no-cache',
+        errorPolicy: 'all',
       })
       .pipe(
         map((res: any): Resource => {
@@ -268,6 +270,7 @@ export class GenericResourceService {
         query: gql`${readQuery}`,
         variables,
         fetchPolicy: 'no-cache',
+        errorPolicy: 'all',
       })
       .pipe(
         map((res: any): Resource => {
