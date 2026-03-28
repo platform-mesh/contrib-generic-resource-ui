@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   pipe:
-    uses: platform-mesh/.github/.github/workflows/pipeline-node-app.yml@f46cca01afbb79f80cd440cbdfd1538963c2ad24 # main
+    uses: platform-mesh/.github/.github/workflows/pipeline-node-app.yml@main
     secrets: inherit
     with:
       imageTagName: ghcr.io/platform-mesh/generic-resource-ui
