@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import LuigiClient from '@luigi-project/client';
+import * as LuigiClient from '@luigi-project/client';
 
 /**
  * Service wrapper for Luigi Client to enable easier testing and dependency injection.
