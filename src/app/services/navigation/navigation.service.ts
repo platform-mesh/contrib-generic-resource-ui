@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import LuigiClient from '@luigi-project/client';
+import * as LuigiClient from '@luigi-project/client';
 import { setNamespace } from 'state/context/context.actions';
 
 @Injectable({
