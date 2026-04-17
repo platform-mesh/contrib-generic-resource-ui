@@ -82,7 +82,7 @@
     "ng-lint-staged": "12.0.4",
     "ng-mocks": "14.13.5",
     "playwright": "1.59.1",
-    "prettier": "3.8.1",
+    "prettier": "3.8.2",
     "ts-node": "10.9.2",
     "typescript": "5.8.3",
     "typescript-eslint": "^8.34.1"
