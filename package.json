@@ -39,7 +39,7 @@
     "@fundamental-ngx/datetime-adapter": "~0.56.2",
     "@fundamental-ngx/i18n": "~0.56.2",
     "@fundamental-ngx/platform": "~0.56.2",
-    "@fundamental-styles/common-css": "0.41.4",
+    "@fundamental-styles/common-css": "0.41.5",
     "@luigi-project/client": "^2.22.1",
     "@luigi-project/client-support-angular": "^2.22.1",
     "@ngrx/effects": "19.2.1",
