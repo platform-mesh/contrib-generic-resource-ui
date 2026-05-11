@@ -1,9 +1,9 @@
 {
   "introspection": {
-    "ConfigMap": {
+    "V1ConfigMap": {
       "data": {
         "__type": {
-          "name": "ConfigMap",
+          "name": "V1ConfigMap",
           "kind": "OBJECT",
           "fields": [
             {
@@ -53,7 +53,7 @@
         }
       }
     },
-    "ConfigMapInput": {
+    "V1ConfigMap_Input": {
       "data": { "__type": null }
     },
     "io_k8s_apimachinery_pkg_apis_meta_v1_ObjectMetametadata": {

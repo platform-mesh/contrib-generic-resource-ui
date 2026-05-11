@@ -9,6 +9,7 @@ import { FieldAnalyzerService } from 'services/schema/field-analyzer.service';
 import { SchemaService } from 'services/schema/schema.service';
 import { selectContext } from 'state/context/context.selectors';
 import { IntrospectionType, ResourceDefinition, ResourceNodeContext } from 'models/index';
+import { buildGraphQLTypeName, buildGraphQLInputTypeName } from 'services/resource/graphql-type-naming';
 
 @Injectable()
 export class SchemaEffects {
@@ -33,9 +34,9 @@ export class SchemaEffects {
         // Use readFromParentKcpPath from resource definition config
         const readFromParentKcpPath = resourceDefinition.readFromParentKcpPath ?? false;
 
-        // Build versioned type name to get correct nested types
-        // Format: {Group}{Version}{Kind} e.g., ApisKcpIoV1alpha2APIBinding
-        const versionedTypeName = this.buildVersionedTypeName(resourceDefinition);
+        // Build fully-qualified type name matching gateway naming convention
+        // Format: Pascalize(SanitizedGroup + "_" + Version) + Kind e.g., AppsV1Deployment, V1ConfigMap
+        const versionedTypeName = buildGraphQLTypeName(resourceDefinition);
         console.log('[SchemaEffects] Introspecting versioned type:', versionedTypeName);
         console.log('[SchemaEffects] Using GraphQL URL:', context.portalContext?.crdGatewayApiUrl);
         console.log('[SchemaEffects] readFromParentKcpPath:', readFromParentKcpPath);
@@ -47,22 +48,11 @@ export class SchemaEffects {
               console.log('[SchemaEffects] Introspection result for', versionedTypeName, ':', resourceType);
 
               if (!resourceType) {
-                // Fallback to unversioned type name for core API resources
-                console.log('[SchemaEffects] Versioned type not found, trying:', resourceDefinition.kind);
-                return this.schemaService
-                  .introspectType(resourceDefinition.kind, context, readFromParentKcpPath)
-                  .pipe(
-                    switchMap((fallbackType) => {
-                      if (!fallbackType) {
-                        return of(
-                          loadSchemaFailure({
-                            error: `Type ${resourceDefinition.kind} not found in schema`,
-                          })
-                        );
-                      }
-                      return this.processResourceType(fallbackType, resourceDefinition, context, readFromParentKcpPath);
-                    })
-                  );
+                return of(
+                  loadSchemaFailure({
+                    error: `Type ${versionedTypeName} not found in schema`,
+                  })
+                );
               }
 
               return this.processResourceType(resourceType, resourceDefinition, context, readFromParentKcpPath);
@@ -87,7 +77,7 @@ export class SchemaEffects {
     console.log('[SchemaEffects] Nested type names to introspect:', nestedTypeNames);
 
     // Introspect input type and all nested types
-    const versionedInputTypeName = this.buildVersionedTypeName(resourceDefinition) + 'Input';
+    const versionedInputTypeName = buildGraphQLInputTypeName(resourceDefinition);
     const queries: Record<string, Observable<IntrospectionType | null>> = {
       inputType: this.schemaService.introspectType(versionedInputTypeName, context, readFromParentKcpPath),
     };
@@ -116,26 +106,6 @@ export class SchemaEffects {
         });
       })
     );
-  }
-
-  private buildVersionedTypeName(resourceDefinition: ResourceDefinition): string {
-    const { group, version, kind } = resourceDefinition;
-
-    // For core API resources (no group), just use the kind
-    if (!group) {
-      return kind;
-    }
-
-    // Convert group to PascalCase: apis.kcp.io -> ApisKcpIo
-    const groupPascal = group
-      .split(/[.\-]/)
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-      .join('');
-
-    // Version is typically like v1alpha2 -> V1alpha2
-    const versionPascal = version.charAt(0).toUpperCase() + version.slice(1);
-
-    return `${groupPascal}${versionPascal}${kind}`;
   }
 
   private extractNestedTypeNames(resourceType: IntrospectionType): string[] {

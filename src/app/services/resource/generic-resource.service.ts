@@ -1,4 +1,5 @@
 import { ApolloFactory } from './apollo-factory';
+import { buildGraphQLInputTypeName } from './graphql-type-naming';
 import { Injectable, inject } from '@angular/core';
 import {
   FieldAnalysis,
@@ -360,11 +361,12 @@ export class GenericResourceService {
     const isNamespaced = resourceDefinition.scope === 'Namespaced';
 
     const variables: Record<string, any> = { object: resource };
-    let variablesDef = `($object: ${kind}Input!)`;
+    const inputTypeName = buildGraphQLInputTypeName(resourceDefinition);
+    let variablesDef = `($object: ${inputTypeName}!)`;
     let mutationArgs = '(object: $object)';
 
     if (isNamespaced && context.namespaceId) {
-      variablesDef = `($object: ${kind}Input!, $namespace: String)`;
+      variablesDef = `($object: ${inputTypeName}!, $namespace: String)`;
       mutationArgs = '(object: $object, namespace: $namespace)';
       variables['namespace'] = context.namespaceId;
     }
@@ -429,11 +431,12 @@ export class GenericResourceService {
       name: resource.metadata.name,
       object: cleanResource,
     };
-    let variablesDef = `($name: String!, $object: ${kind}Input!)`;
+    const inputTypeName = buildGraphQLInputTypeName(resourceDefinition);
+    let variablesDef = `($name: String!, $object: ${inputTypeName}!)`;
     let mutationArgs = '(name: $name, object: $object)';
 
     if (isNamespaced && context.namespaceId) {
-      variablesDef = `($name: String!, $object: ${kind}Input!, $namespace: String)`;
+      variablesDef = `($name: String!, $object: ${inputTypeName}!, $namespace: String)`;
       mutationArgs = '(name: $name, object: $object, namespace: $namespace)';
       variables['namespace'] = context.namespaceId;
     }
