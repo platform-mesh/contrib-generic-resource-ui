@@ -78,7 +78,7 @@
     "jest-junit": "16.0.0",
     "jest-mock-extended": "3.0.7",
     "jest-preset-angular": "14.6.0",
-    "lint-staged": "16.4.0",
+    "lint-staged": "17.0.2",
     "ng-lint-staged": "12.0.4",
     "ng-mocks": "14.13.5",
     "playwright": "1.59.1",
