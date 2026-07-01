@@ -166,10 +166,12 @@ export class ContextService {
       return portalContext;
     }
 
-    // Extract the base URL pattern and rebuild with current kcpPath
-    // URL pattern: https://host/api/kubernetes-graphql-gateway/{kcpPath}/graphql
+    // Extract the base URL pattern and rebuild with current kcpPath. Two
+    // path shapes are supported:
+    //   /api/kubernetes-graphql-gateway/{kcpPath}/graphql
+    //   /gateway/api/clusters/{kcpPath}/graphql
     const urlMatch = portalContext.crdGatewayApiUrl.match(
-      /^(https?:\/\/[^/]+\/api\/kubernetes-graphql-gateway\/)([^/]+)(\/graphql)$/
+      /^(https?:\/\/[^/]+\/(?:api\/kubernetes-graphql-gateway|gateway\/api\/clusters)\/)([^/]+)(\/graphql)$/
     );
 
     if (!urlMatch) {
