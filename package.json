@@ -33,7 +33,7 @@
     "@angular/platform-browser": "19.2.20",
     "@angular/platform-browser-dynamic": "19.2.20",
     "@angular/router": "19.2.20",
-    "@apollo/client": "^3.13.8",
+    "@apollo/client": "^4.0.0",
     "@fundamental-ngx/cdk": "~0.56.2",
     "@fundamental-ngx/core": "~0.56.2",
     "@fundamental-ngx/datetime-adapter": "~0.56.2",
