@@ -66,7 +66,7 @@ export class DashboardService {
         fetchPolicy: 'no-cache',
       })
       .pipe(
-        map((result) => this.extractCards(result.data)),
+        map((result) => this.extractCards(result.data ?? {})),
         catchError((err) => {
           console.error('[DashboardService] Failed to fetch cards:', err);
           return of([]);

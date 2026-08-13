@@ -45,7 +45,7 @@ export class CardDataService {
       .query<Record<string, any>>({ query: gql`${spec.dataQuery}` })
       .pipe(
         map((result) => ({
-          resources: this.extractItems(result.data),
+          resources: this.extractItems(result.data ?? {}),
           loading: false,
           error: null,
           lastUpdated: new Date(),

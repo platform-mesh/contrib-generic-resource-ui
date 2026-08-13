@@ -1,3 +1,4 @@
+import { HttpHeaders } from '@angular/common/http';
 import { Injectable, NgZone, inject } from '@angular/core';
 import {
   type ApolloClientOptions,
@@ -85,14 +86,14 @@ export class ApolloFactory {
   private createApolloOptions(
     nodeContext: ResourceNodeContext,
     readFromParentKcpPath: boolean
-  ): ApolloClientOptions<any> {
+  ): ApolloClientOptions {
     const contextLink = setContext(() => {
       return {
         uri: () => this.getGatewayUrl(nodeContext, readFromParentKcpPath),
-        headers: {
+        headers: new HttpHeaders({
           Authorization: `Bearer ${nodeContext.token}`,
           Accept: 'charset=utf-8',
-        },
+        }),
       };
     });
 

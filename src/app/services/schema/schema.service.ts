@@ -22,7 +22,7 @@ export class SchemaService {
         variables: { typeName },
         fetchPolicy: 'cache-first',
       })
-      .pipe(map((result) => result.data.__type));
+      .pipe(map((result) => result.data?.__type ?? null));
   }
 
   introspectMultipleTypes(
