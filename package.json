@@ -41,7 +41,7 @@
     "@fundamental-ngx/platform": "^0.63.0",
     "@fundamental-styles/common-css": "^0.41.7",
     "@luigi-project/client": "^2.22.1",
-    "@luigi-project/client-support-angular": "^21.1.0",
+    "@luigi-project/client-support-angular": "^22.0.0",
     "@ngrx/effects": "^21.1.1",
     "@ngrx/operators": "^21.1.1",
     "@ngrx/store": "^21.1.1",
