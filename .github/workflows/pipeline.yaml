@@ -25,12 +25,12 @@ jobs:
   # Always-run jobs (PR + main)
   # ──────────────────────────────────────────────
   test:
-    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@ab6caea57060a3eba5fc58cadbb2aaa1b06da18a # main
     secrets: inherit
 
   docker-build:
     if: github.event_name == 'pull_request'
-    uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@ab6caea57060a3eba5fc58cadbb2aaa1b06da18a # main
     with:
       imageTagName: ghcr.io/platform-mesh/generic-resource-ui
     secrets: inherit
@@ -62,13 +62,13 @@ jobs:
   # ──────────────────────────────────────────────
   create-version:
     if: github.ref == 'refs/heads/main'
-    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@ab6caea57060a3eba5fc58cadbb2aaa1b06da18a # main
     secrets: inherit
 
   docker-build-push:
     if: github.ref == 'refs/heads/main'
     needs: [create-version, test]
-    uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@ab6caea57060a3eba5fc58cadbb2aaa1b06da18a # main
     with:
       imageTagName: ghcr.io/platform-mesh/generic-resource-ui
       version: ${{ needs.create-version.outputs.version }}
@@ -78,7 +78,7 @@ jobs:
   update-version:
     if: github.ref == 'refs/heads/main'
     needs: [create-version, docker-build-push]
-    uses: platform-mesh/.github/.github/workflows/job-chart-version-update.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-chart-version-update.yml@ab6caea57060a3eba5fc58cadbb2aaa1b06da18a # main
     secrets: inherit
     with:
       appVersion: ${{ needs.create-version.outputs.version }}
@@ -88,14 +88,14 @@ jobs:
   sbom:
     if: github.ref == 'refs/heads/main'
     needs: [create-version, docker-build-push]
-    uses: platform-mesh/.github/.github/workflows/job-sbom.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-sbom.yml@ab6caea57060a3eba5fc58cadbb2aaa1b06da18a # main
     with:
       imageReference: ghcr.io/platform-mesh/generic-resource-ui:${{ needs.create-version.outputs.version }}
 
   image-ocm:
     if: github.ref == 'refs/heads/main'
     needs: [create-version, docker-build-push, sbom]
-    uses: platform-mesh/.github/.github/workflows/job-image-ocm.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-image-ocm.yml@ab6caea57060a3eba5fc58cadbb2aaa1b06da18a # main
     secrets: inherit
     with:
       imageReference: ghcr.io/platform-mesh/generic-resource-ui:${{ needs.create-version.outputs.version }}
