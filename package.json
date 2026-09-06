@@ -68,7 +68,7 @@
     "@trivago/prettier-plugin-sort-imports": "6.0.2",
     "@types/jest": "^30.0.0",
     "@types/node": "24.13.2",
-    "angular-eslint": "20.7.0",
+    "angular-eslint": "22.2.0",
     "eslint": "9.39.4",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jest": "29.15.2",
