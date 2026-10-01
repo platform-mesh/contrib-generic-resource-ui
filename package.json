@@ -32,7 +32,7 @@
     "@angular/localize": "21.2.20",
     "@angular/platform-browser": "21.2.20",
     "@angular/platform-browser-dynamic": "21.2.20",
-    "@angular/router": "21.2.20",
+    "@angular/router": "21.2.24",
     "@apollo/client": "^4.2.11",
     "@fundamental-ngx/cdk": "^0.63.0",
     "@fundamental-ngx/core": "^0.63.0",
