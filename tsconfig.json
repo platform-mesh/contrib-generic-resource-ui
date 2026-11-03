@@ -17,14 +17,13 @@
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
-    "baseUrl": "src",
     "paths": {
-      "models/*": ["app/models/*"],
-      "services/*": ["app/services/*"],
-      "state/*": ["app/state/*"],
-      "components/*": ["app/components/*"],
-      "utils/*": ["app/utils/*"],
-      "validators/*": ["app/validators/*"]
+      "models/*": ["./src/app/models/*"],
+      "services/*": ["./src/app/services/*"],
+      "state/*": ["./src/app/state/*"],
+      "components/*": ["./src/app/components/*"],
+      "utils/*": ["./src/app/utils/*"],
+      "validators/*": ["./src/app/validators/*"]
     }
   },
   "angularCompilerOptions": {
