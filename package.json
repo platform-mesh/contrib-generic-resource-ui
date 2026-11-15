@@ -64,7 +64,7 @@
     "@angular/cli": "22.2.4",
     "@angular/compiler-cli": "22.2.3",
     "@openmfp/config-prettier": "0.9.3",
-    "@openmfp/eslint-config-typescript": "0.7.15",
+    "@openmfp/eslint-config-typescript": "0.7.16",
     "@trivago/prettier-plugin-sort-imports": "6.0.2",
     "@types/jest": "30.0.0",
     "@types/node": "26.6.5",
