@@ -25,9 +25,8 @@ jobs:
   # Always-run jobs (PR + main)
   # ──────────────────────────────────────────────
   test:
-    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs]
-    secrets:
-      COMMON_REPOSITORY_TOKEN: ${{ secrets.COMMON_REPOSITORY_TOKEN }}
+    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs,secrets-inherit]
+    secrets: inherit
 
   docker-build:
     if: github.event_name == 'pull_request'
@@ -62,28 +61,24 @@ jobs:
   # ──────────────────────────────────────────────
   create-version:
     if: github.ref == 'refs/heads/main'
-    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs]
-    secrets:
-      PM_PUBLISHER_PRIVATE_KEY: ${{ secrets.PM_PUBLISHER_PRIVATE_KEY }}
+    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs,secrets-inherit]
+    secrets: inherit
 
   docker-build-push:
     if: github.ref == 'refs/heads/main'
     needs: [create-version, test]
-    uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs]
+    uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs,secrets-inherit]
     with:
       imageTagName: ghcr.io/platform-mesh/generic-resource-ui
       version: ${{ needs.create-version.outputs.version }}
       multiarch: true
-    secrets:
-      PM_PUBLISHER_PRIVATE_KEY: ${{ secrets.PM_PUBLISHER_PRIVATE_KEY }}
-      COMMON_REPOSITORY_TOKEN: ${{ secrets.COMMON_REPOSITORY_TOKEN }}
+    secrets: inherit
 
   update-version:
     if: github.ref == 'refs/heads/main'
     needs: [create-version, docker-build-push]
-    uses: platform-mesh/.github/.github/workflows/job-chart-version-update.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs]
-    secrets:
-      PM_PUBLISHER_PRIVATE_KEY: ${{ secrets.PM_PUBLISHER_PRIVATE_KEY }}
+    uses: platform-mesh/.github/.github/workflows/job-chart-version-update.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs,secrets-inherit]
+    secrets: inherit
     with:
       appVersion: ${{ needs.create-version.outputs.version }}
       chart: generic-resource-ui
