@@ -26,7 +26,8 @@ jobs:
   # ──────────────────────────────────────────────
   test:
     uses: platform-mesh/.github/.github/workflows/job-node-test.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs]
-    secrets: inherit
+    secrets:
+      COMMON_REPOSITORY_TOKEN: ${{ secrets.COMMON_REPOSITORY_TOKEN }}
 
   docker-build:
     if: github.event_name == 'pull_request'
@@ -62,7 +63,8 @@ jobs:
   create-version:
     if: github.ref == 'refs/heads/main'
     uses: platform-mesh/.github/.github/workflows/job-create-version.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs]
-    secrets: inherit
+    secrets:
+      PM_PUBLISHER_PRIVATE_KEY: ${{ secrets.PM_PUBLISHER_PRIVATE_KEY }}
 
   docker-build-push:
     if: github.ref == 'refs/heads/main'
@@ -72,13 +74,16 @@ jobs:
       imageTagName: ghcr.io/platform-mesh/generic-resource-ui
       version: ${{ needs.create-version.outputs.version }}
       multiarch: true
-    secrets: inherit
+    secrets:
+      PM_PUBLISHER_PRIVATE_KEY: ${{ secrets.PM_PUBLISHER_PRIVATE_KEY }}
+      COMMON_REPOSITORY_TOKEN: ${{ secrets.COMMON_REPOSITORY_TOKEN }}
 
   update-version:
     if: github.ref == 'refs/heads/main'
     needs: [create-version, docker-build-push]
     uses: platform-mesh/.github/.github/workflows/job-chart-version-update.yml@15b291d550257bc590a89917bfbbe0e30bf08895 # main # zizmor: ignore[stale-action-refs]
-    secrets: inherit
+    secrets:
+      PM_PUBLISHER_PRIVATE_KEY: ${{ secrets.PM_PUBLISHER_PRIVATE_KEY }}
     with:
       appVersion: ${{ needs.create-version.outputs.version }}
       chart: generic-resource-ui
